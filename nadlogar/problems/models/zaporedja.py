@@ -34,6 +34,59 @@ def niz_clenov(cleni, imena_clenov=False):
     )
     return niz
 
+def vsota_geometrijskega(a1, q, n):
+    """
+    Izračuna vsoto prvih n členov geometrijskega zaporedja.
+    :param a1: prvi člen geometrijskega zaporedja
+    :param q: kvocient geometrijskega zaporedja
+    :param n: število členov
+    :return: vsoto prvih n členov
+    >>> vsota_geometrijskega(-16, 1/2, 10)
+    -31.9687500000000
+    >>> vsota_geometrijskega(2, 3, 18)
+    387420488
+    """
+    sn = sympy.Mul(a1, q ** n - 1, sympy.Pow(q - 1, -1))
+    # sn = sympy.Rational(a1 * (q ** n - 1), (q - 1))
+    return sn
+
+def clen_geometrijskega(a1, q, n):
+    """
+    Izračuna n-ti člen geometrijskega zaporedja.
+    :param a1: prvi člen geometrijskega zaporedja
+    :param q: kvocient geometrijskega zaporedja
+    :param n: zaporedni člen #TODO Ni člen ampak index člena?
+    :return: n-ti člen geometrijskega zaporedja
+    >>> clen_geometrijskega(3, 2, 5)
+    48
+    >>> clen_geometrijskega(-4, 1/2, 3)
+    -1.0
+    """
+    # an = sympy.Mul(a1,sympy.Pow(q,(n-1)))
+    an = a1 * q ** (n - 1)
+    return an
+
+def vsota_geometrijske_vrste(a1, q):
+    """
+    Izračuna vsoto geometrijske vrste ali opozori če zaporedje ni konvergentno.
+
+    :param a1: prvi člen geometrijskega zaporedja
+    :param q: kvocient geometrijskega zaporedja
+    :return: vsoto geometrijske vrste
+
+
+    >>> vsota_geometrijske_vrste(8, -1/2)
+    5.33333333333333
+
+    >>> vsota_geometrijske_vrste(1, 1/5)
+    1.25000000000000
+    """
+    if abs(q) < 1:
+        s = sympy.Mul(a1, sympy.Pow(1 - q, -1))
+        return s
+    else:
+        raise ValueError('Zaporedje ni konvergentno.')
+    
 
 class SplosniClenZaporedja(Problem):
     """Naloga za iskanje splošnega člena poljubnega zaporedja."""
@@ -210,3 +263,84 @@ class SplosniClenAritmeticnegaEnacbi(Problem):
             "a1": sympy.latex(a1),
             "d": sympy.latex(d),
         }
+
+
+class VsotaGeometrijskega(Problem):
+    """Naloga za izračun vsote prvih :math:`n` členov geometrijskega zaporedja."""
+    
+    default_instruction = r"Izračunaj vsoto prvih $@stevilo_clenov$ členov geometrijskega zaporedja, če je $@izraz$."
+    default_solution = r"$s_{@stevilo_clenov} = @vsota$"
+    
+    class Meta:
+        verbose_name = "Zaporedja / vsota prvih n členov geometrijskega zaporedja"
+        
+    podan_splosni_clen = models.BooleanField(
+        "podan splosni clen", 
+        help_text="Ali je podan splošni člen zaporedja?",
+        choices=[(True, "Da"), (False, "Ne")],
+        default=True,
+    )
+        
+    def generate(self):
+        N = random.randint(4, 10)
+        n = sympy.symbols('n')
+        a1 = random.choice([x for x in range(-5, 5) if x != 0] + [sympy.Rational(1, x) for x in [-3, -2, 2, 3]])
+        q = random.choice([x for x in [-3, -2, 2, 3]] + [sympy.Rational(1, x) for x in [-3, -2, 2, 3]])
+        if self.podan_splosni_clen:
+            izraz = '$a_n=' + sympy.latex(sympy.Mul(a1, sympy.Pow(q, (n - 1), evaluate=False), evaluate=False)) + '$'
+        else:
+            [n1, n2] = sorted(random.sample(list(range(2, 8)), 2))
+            # TODO elegantnejša rešitev?
+            izraz = '$a_{{{0}}}={1}$ in $a_{{{2}}}={3}$'.format(n1, clen_geometrijskega(a1, q, n1),
+                                                                n2, clen_geometrijskega(a1, q, n2))
+        vsota = vsota_geometrijskega(a1, q, N)
+        return {
+            "izraz": izraz,
+            "stevilo_clenov": N,
+            "vsota": vsota
+        }
+        
+        
+class VsotaGeometrijskeVrste(Problem):
+    """Maloga za zapis geometrijske vrste, če poznaš dva podatka."""
+    
+    default_instruction = r"Zapiši geometrijsko vrsto, če je $@podatek1=@vrednost1$ in $@podatek2=@vrednost2$."
+    default_solution = r"$@vrsta$"
+    
+    class Meta:
+        verbose_name = "Zaporedja / vsota geometrijske vrste"
+
+    lazji_podatki = models.BooleanField(
+        "lazji podatki", 
+        help_text="",
+        choices=[(True, "Da"), (False, "Ne")],
+        default=True,
+    )
+
+    def generate(self):
+        q = random.choice([-sympy.Rational(1, 2), sympy.Rational(1, 2),
+                           -sympy.Rational(2, 3), -sympy.Rational(1, 3), sympy.Rational(2, 3), sympy.Rational(1, 3),
+                           -sympy.Rational(3, 4), -sympy.Rational(1, 4), sympy.Rational(3, 4), sympy.Rational(1, 4),
+                           -sympy.Rational(2, 5), -sympy.Rational(1, 5), sympy.Rational(2, 5), sympy.Rational(1, 5),
+                           -sympy.Mul(sympy.sqrt(2), sympy.Pow(2, -1), evaluate=False),
+                           sympy.Mul(sympy.sqrt(2), sympy.Pow(2, -1), evaluate=False),
+                           -sympy.Mul(sympy.sqrt(2), sympy.Pow(3, -1), evaluate=False),
+                           sympy.Mul(sympy.sqrt(2), sympy.Pow(3, -1), evaluate=False)])
+        a1 = random.choice([x for x in range(-10, 11) if x != 0])
+        s = vsota_geometrijske_vrste(a1, q)
+        izbor = [('a_1', a1), ('q', q), ('s', s)]
+        if not self.lazji_podatki:
+            n1 = random.randint(3, 5)
+            an = clen_geometrijskega(a1, q, n1)
+            n2 = random.randint(3, 5)
+            sn = vsota_geometrijskega(a1, q, n2)
+            izbor += [('a_{}'.format(n1), an), ('s_{}'.format(n2), sn)]
+        [izraz1, izraz2] = random.sample(izbor, 2)
+        vrsta = '+'.join('{}'.format(sympy.latex(clen_geometrijskega(a1, q, n))) for n in range(1, 5)) + '+...'
+        return {
+            'podatek1': izraz1[0], 
+            'vrednost1': izraz1[1], 
+            'podatek2': izraz2[0], 
+            'vrednost2': izraz2[1],
+            'vrsta': vrsta
+            }
