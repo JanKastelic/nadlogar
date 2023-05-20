@@ -40,6 +40,7 @@ Po prvi namestitvi, pa tudi na vsake toliko časa, greste v mapo `nadlogar/nadlo
 
     git pull
     venv\Scripts\activate
+    Set-ExecutionPolicy Unrestricted -scope Process
     pip install -r requirements\local.txt
     python manage.py migrate
 
