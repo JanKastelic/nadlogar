@@ -265,6 +265,46 @@ class SplosniClenAritmeticnegaEnacbi(Problem):
         }
 
 
+class PrviCleniGeometrijskega(Problem):
+    """Naloga za zapis splošnega člena geometrijskega zaporedja in računanje prvih petih členov, če poznaš prvi člen in količnik."""
+
+    default_instruction = r"Zapiši prvih pet členov in splošni člen geometrijskega zaporedja s prvim členom $a_1=@a1$ in količnikom $q=@q$."
+    default_solution = r"$a_1=@a1$, $a_2=@a2$, $a_3=@a3$, $a_4=@a4$, $a_5=@a5$ in $a_n=@splosni$"
+
+    class Meta:
+        verbose_name = "Zaporedja / prvi člen in količnik geometrijskega"
+        
+    racionalne_vrednosti = models.BooleanField(
+        "racionalne vrednosti", 
+        help_text="Ali naj bodo vključene racionalne vrednosti?",
+        choices=[(True, "Da"), (False, "Ne")],
+        default=False,
+    )
+
+    def generate(self):
+        if not self.racionalne_vrednosti:
+            a1 = random.choice([x for x in range(-10, 10) if x != 0])
+            q = random.choice([-3, -2, 2, 3])
+        else:
+            a1 = random.choice([sympy.Rational(1, x) for x in range(-6, 6) if x != 0] + [sympy.Rational(2, x) for x in range(-6, 6) if x != 0])
+            q = random.choice([sympy.Rational(1, x) for x in [-3, -2, 2, 3]])
+        cleni = [a1]
+        for N in range(2, 6):
+            cleni.append(clen_geometrijskega(a1, q, N))
+        n = sympy.symbols('n')
+        splosni = sympy.Mul(a1, sympy.Pow(q, (n - 1), evaluate=False), evaluate=False)
+        return {
+            'cleni': cleni, 
+            'a1': sympy.latex(a1),
+            'a2': sympy.latex(cleni[1]),
+            'a3': sympy.latex(cleni[2]),
+            'a4': sympy.latex(cleni[3]),
+            'a5': sympy.latex(cleni[4]),             
+            'q': sympy.latex(q), 
+            'splosni': sympy.latex(splosni)
+            }
+    
+
 class VsotaGeometrijskega(Problem):
     """Naloga za izračun vsote prvih :math:`n` členov geometrijskega zaporedja."""
     
@@ -297,7 +337,7 @@ class VsotaGeometrijskega(Problem):
         return {
             "izraz": izraz,
             "stevilo_clenov": N,
-            "vsota": vsota
+            "vsota": sympy.latex(vsota)
         }
         
         
@@ -312,7 +352,7 @@ class VsotaGeometrijskeVrste(Problem):
 
     lazji_podatki = models.BooleanField(
         "lazji podatki", 
-        help_text="",
+        help_text="Ali naj bodo v nalogi lažji podatki?",
         choices=[(True, "Da"), (False, "Ne")],
         default=True,
     )
@@ -328,13 +368,13 @@ class VsotaGeometrijskeVrste(Problem):
                            sympy.Mul(sympy.sqrt(2), sympy.Pow(3, -1), evaluate=False)])
         a1 = random.choice([x for x in range(-10, 11) if x != 0])
         s = vsota_geometrijske_vrste(a1, q)
-        izbor = [('a_1', a1), ('q', q), ('s', s)]
+        izbor = [('a_1', sympy.latex(a1)), ('q', sympy.latex(q)), ('s', sympy.latex(s))]
         if not self.lazji_podatki:
             n1 = random.randint(3, 5)
             an = clen_geometrijskega(a1, q, n1)
             n2 = random.randint(3, 5)
             sn = vsota_geometrijskega(a1, q, n2)
-            izbor += [('a_{}'.format(n1), an), ('s_{}'.format(n2), sn)]
+            izbor += [('a_{}'.format(n1), sympy.latex(an)), ('s_{}'.format(n2), sympy.latex(sn))]
         [izraz1, izraz2] = random.sample(izbor, 2)
         vrsta = '+'.join('{}'.format(sympy.latex(clen_geometrijskega(a1, q, n))) for n in range(1, 5)) + '+...'
         return {
